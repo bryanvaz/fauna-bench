@@ -174,7 +174,7 @@
 
     const color = Chart.helpers.color;
     const barChartData = {
-      labels: ['< 100', '100-200', '200 - 300', '300 - 400', '400 - 500', '500 - 600', '700+'],
+      labels: ['< 100', '100-200', '200 - 300', '300 - 400', '400 - 500', '500 - 600', '> 700'],
       datasets: [{
         label: 'Client Query Time',
         backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
@@ -252,13 +252,13 @@
         });
 
       // Update Histogram
-      barChartData.datasets[0].data = [0,0,0,0,0,0,0];
-      barChartData.datasets[1].data = [0,0,0,0,0,0,0];
+      barChartData.datasets[0].data = [0, 0, 0, 0, 0, 0, 0];
+      barChartData.datasets[1].data = [0, 0, 0, 0, 0, 0, 0];
       clientQueryTimeArrSorted.forEach(val => {
         const i = Math.floor(val / 100);
         if (i >= barChartData.datasets[0].data.length) {
-          barChartData.datasets[0].data[barChartData.datasets[0].data.length - 1] = 
-          barChartData.datasets[0].data[barChartData.datasets[0].data.length - 1] + 1
+          barChartData.datasets[0].data[barChartData.datasets[0].data.length - 1] =
+            barChartData.datasets[0].data[barChartData.datasets[0].data.length - 1] + 1
         } else {
           barChartData.datasets[0].data[i] = barChartData.datasets[0].data[i] + 1;
         }
@@ -266,8 +266,8 @@
       serverQueryTimeArrSorted.forEach(val => {
         const i = Math.floor(val / 100);
         if (i >= barChartData.datasets[1].data.length) {
-          barChartData.datasets[1].data[barChartData.datasets[1].data.length - 1] = 
-          barChartData.datasets[1].data[barChartData.datasets[1].data.length - 1] + 1
+          barChartData.datasets[1].data[barChartData.datasets[1].data.length - 1] =
+            barChartData.datasets[1].data[barChartData.datasets[1].data.length - 1] + 1
         } else {
           barChartData.datasets[1].data[i] = barChartData.datasets[1].data[i] + 1;
         }
@@ -339,14 +339,26 @@
           // }
         },
         scales: {
-            xAxes: [{
-                ticks: {
-                    // Include a dollar sign in the ticks
-                    callback: function(value, index, values) {
-                        return value + '%';
-                    }
-                }
-            }]
+          yAxes: [{
+            scaleLabel: {
+              display: true,
+              fontSize: 12,
+              labelString: 'Query time (ms)',
+            },
+          }],
+          xAxes: [{
+            scaleLabel: {
+              display: true,
+              fontSize: 12,
+              labelString: '% of requests',
+            },
+            ticks: {
+              // Include a dollar sign in the ticks
+              callback: function (value, index, values) {
+                return value + '%';
+              }
+            }
+          }],
         }
       }
     });
