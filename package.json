@@ -1,0 +1,19 @@
+{
+  "name": "fauna-bench",
+  "version": "1.0.0",
+  "description": "Benchmarking tool for FaunaDB",
+  "main": "index.js",
+  "repository": "git@github.com:bryanvaz/fauna-bench.git",
+  "author": "Bryan Vaz <bryanvaz@users.noreply.github.com>",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "sls": "serverless",
+    "http": "http-server docs -c-1 -o /"
+  },
+  "devDependencies": {
+    "http-server": "^0.12.3",
+    "serverless": "^2.23.0",
+    "serverless-offline": "^6.8.0"
+  }
+}
