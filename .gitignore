@@ -257,3 +257,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/node,macos,windows,terraform,serverless,visualstudiocode
+# Ignore serverless manifest files
+serverless.manifest.json
+.serverless/manifest.json

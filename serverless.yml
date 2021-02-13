@@ -1,0 +1,152 @@
+
+service: fauna-bench
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${self:custom.stage, 'dev'} # Set the default stage used.
+  region: ${self:custom.region, 'us-east-1'}
+  profile: ${file(serverless.env.yml):provider.profile, 'default'}
+  memorySize: 128 # Overwrite the default memory size.
+  timeout: 5 # The default is 6 seconds
+  logRetentionInDays: 14
+  # role: defaultIamRole
+  # endpointType: REGIONAL # Default API Gateway Endpoints should be regional. Other Options are: PRIVATE, or EDGE (serverless default)
+  # httpApi:
+  #   payload: '2.0'
+  # tracing:
+    # apiGateway: true
+    # lambda: true
+  # Custom stack name
+  stackName: ${self:custom.user}-${self:service}-sls-${self:provider.stage}
+  environment:
+    SLS_STAGE: ${self:provider.stage}
+    ENVIRONMENT: ${self:provider.stage}
+    # CORS_ORIGIN: ${self:custom.corsOrigin}
+    FAUNA_API_KEY: ${env:FAUNA_API_KEY, file(serverless.env.yml):${self:provider.stage}.environment.FAUNA_API_KEY}
+  tags: # Service Wide Tags
+    Environment: ${self:provider.stage}
+    Service: ${self:service}
+    User: ${self:custom.user}
+
+plugins:
+  - serverless-plugin-select # Select functions to be deployed based on stage/region
+  - '@silvermine/serverless-plugin-cloudfront-lambda-edge'
+  # - serverless-webpack       # Packages and parses functions for lambda
+  - serverless-offline
+  - serverless-manifest-plugin
+  # - serverless-domain-manager # For Custom Domain name management
+
+custom:
+  stage: ${opt:stage, env:SLS_STAGE}
+  region: ${file(serverless.env.yml):${self:provider.stage}.${self:provider.name}.region, file(serverless.env.yml):provider.region}
+  user: ${env:SLS_USER, ${file(serverless.env.yml):user}, 'default'}
+  prefix: ${self:custom.user}-${self:service}-${self:provider.region}-${self:provider.stage}
+  
+  # For serverless-offline
+  serverless-offline:
+    port: 3700
+    useChildProcesses: true
+
+  # For serverless-webpack
+  webpack:
+    webpackConfig: './webpack.config.js'
+    includeModules:
+      forceExclude:
+        - aws-sdk
+      # forceInclude:
+      #   - knex
+      #   - mysql2 # I'm using mysql2
+    keepOutputDirectory: true
+    packager: 'yarn'   # Packager that will be used to package your external modules
+
+  # serverless-manifest-plugin
+  manifest:
+    # Custom manifest output path. Default ./.serverless/manifest.json
+    # output: ./serverless.manifest.json
+    # set to true to disable manifest file from being created
+    disableOutput: false
+    # Path to custom file with JS function for additional post processing
+    # postProcess: ./my-file-to-process-manifest-data.js
+    # Set plugin log output to silent. Default false
+    silent: false
+    # Path to the function code. Default serverless.yml location (process.cwd())
+    # srcPath: ./dist
+
+# you can add packaging information here
+package:
+  individually: true
+  exclude:
+    - ./**
+  include:
+    - functions/edge.js # require because not using webpack
+
+functions:
+  edge:
+    name: ${self:custom.prefix}-edge-origin-request
+    handler: functions/edge.handler
+    memorySize: 128
+    timeout: 1
+    lambdaAtEdge:
+      distribution: 'FaunaBenchDistribution'
+      eventType: 'origin-request'
+      includeBody: true
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    FaunaBenchWebsiteBucket:
+        Type: 'AWS::S3::Bucket'
+        Properties:
+          BucketName: '${self:custom.prefix}-bucket'
+          AccessControl: 'PublicRead'
+          WebsiteConfiguration:
+            IndexDocument: 'index.html'
+            ErrorDocument: 'error.html'
+    FaunaBenchDistribution:
+        Type: 'AWS::CloudFront::Distribution'
+        Properties:
+          DistributionConfig:
+            DefaultCacheBehavior:
+              TargetOriginId: 'WebsiteBucketOrigin'
+              ViewerProtocolPolicy: 'redirect-to-https'
+              AllowedMethods:
+                - GET
+                - OPTIONS
+                - HEAD
+                - PUT
+                - PATCH
+                - POST
+                - DELETE
+              DefaultTTL: 5 # 5 seconds
+              MaxTTL: 60 # one minutes
+              Compress: true
+              ForwardedValues:
+                QueryString: 'true'
+                Headers:
+                  - 'Content-Type'
+                Cookies:
+                  Forward: 'none'
+            DefaultRootObject: 'index.html'
+            Enabled: true
+            IPV6Enabled: true
+            PriceClass: 'PriceClass_100'
+            HttpVersion: 'http2'
+            Comment: 'Fauna Lambda at Edge'
+            ViewerCertificate:
+              CloudFrontDefaultCertificate: true
+            Origins:
+              - Id: 'WebsiteBucketOrigin'
+                DomainName: { 'Fn::GetAtt': [ 'FaunaBenchWebsiteBucket', 'DomainName' ] }
+                S3OriginConfig: {}
+  Outputs:
+    FaunaBenchDistributionId:
+      Value:
+        Ref: FaunaBenchDistribution
+    FaunaBenchDistributionDomainName:
+      Value: {"Fn::GetAtt": ["FaunaBenchDistribution", "DomainName"]}
+    WebsiteBucketOriginDomainName:
+      Value:
+        "Fn::GetAtt":
+          - FaunaBenchWebsiteBucket
+          - DomainName

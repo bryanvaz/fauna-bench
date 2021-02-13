@@ -7,13 +7,34 @@
   "author": "Bryan Vaz <bryanvaz@users.noreply.github.com>",
   "license": "MIT",
   "private": false,
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "sls": "serverless",
-    "http": "http-server docs -c-1 -o /"
+    "http": "http-server docs -c-1 -o /",
+    "lint": "eslint functions",
+    "deploy": "sls deploy"
   },
   "devDependencies": {
+    "@babel/core": "^7.12.16",
+    "@babel/preset-env": "^7.12.16",
+    "@silvermine/serverless-plugin-cloudfront-lambda-edge": "https://github.com/Krolcom/serverless-plugin-cloudfront-lambda-edge.git",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.19.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prettier": "^7.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.3.1",
     "http-server": "^0.12.3",
+    "prettier": "^2.2.1",
     "serverless": "^2.23.0",
+    "serverless-http": "^2.7.0",
+    "serverless-manifest-plugin": "^1.0.7",
     "serverless-offline": "^6.8.0"
+  },
+  "dependencies": {
+    "serverless-plugin-select": "^2.0.0-rc.1"
   }
 }
