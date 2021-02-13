@@ -1,4 +1,4 @@
-/* eslint-disable operator-assignment, no-restricted-properties */
+/* eslint-disable operator-assignment, no-restricted-properties, no-plusplus, no-await-in-loop  */
 /* eslint-env browser */
 /* global R:false, faunadb:false, $:false, Chart:false */
 /**
@@ -260,7 +260,7 @@ const runLoop = async (client, queryDetails) => {
   const pausetime = parseInt($('#pausetime').val() || '500', 10);
   console.log(`Running for ${numOfLoops} loops...`);
   try {
-    for (j = 0; j < numOfLoops; j++) {
+    for (let j = 0; j < numOfLoops; j++) {
       if (abortTest) break;
       await queryTest(client, queryDetails);
       await timeout(pausetime);

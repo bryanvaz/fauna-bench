@@ -4,16 +4,16 @@ service: fauna-bench
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: ${self:custom.stage, 'dev'} # Set the default stage used.
+  stage: ${opt:stage, self:custom.stage} # Set the default stage used.
   region: ${self:custom.region, 'us-east-1'}
   profile: ${file(serverless.env.yml):provider.profile, 'default'}
   memorySize: 128 # Overwrite the default memory size.
   timeout: 5 # The default is 6 seconds
   logRetentionInDays: 14
   # role: defaultIamRole
-  # endpointType: REGIONAL # Default API Gateway Endpoints should be regional. Other Options are: PRIVATE, or EDGE (serverless default)
-  # httpApi:
-  #   payload: '2.0'
+  endpointType: REGIONAL # Default API Gateway Endpoints should be regional. Other Options are: PRIVATE, or EDGE (serverless default)
+  httpApi:
+    payload: '2.0'
   # tracing:
     # apiGateway: true
     # lambda: true
@@ -32,13 +32,13 @@ provider:
 plugins:
   - serverless-plugin-select # Select functions to be deployed based on stage/region
   - '@silvermine/serverless-plugin-cloudfront-lambda-edge'
-  # - serverless-webpack       # Packages and parses functions for lambda
+  - serverless-webpack       # Packages and parses functions for lambda
   - serverless-offline
   - serverless-manifest-plugin
   # - serverless-domain-manager # For Custom Domain name management
 
 custom:
-  stage: ${opt:stage, env:SLS_STAGE}
+  stage: ${env:SLS_STAGE, 'dev'}
   region: ${file(serverless.env.yml):${self:provider.stage}.${self:provider.name}.region, file(serverless.env.yml):provider.region}
   user: ${env:SLS_USER, ${file(serverless.env.yml):user}, 'default'}
   prefix: ${self:custom.user}-${self:service}-${self:provider.region}-${self:provider.stage}
@@ -76,10 +76,10 @@ custom:
 # you can add packaging information here
 package:
   individually: true
-  exclude:
-    - ./**
-  include:
-    - functions/edge.js # require because not using webpack
+  # exclude:
+  #   - ./**
+  # include:
+  #   - functions/edge.js # require because not using webpack
 
 functions:
   edge:
@@ -91,6 +91,15 @@ functions:
       distribution: 'FaunaBenchDistribution'
       eventType: 'origin-request'
       includeBody: true
+  regional:
+    name: ${self:custom.prefix}-regional
+    handler: functions/regional.handler
+    environment: # Function level environment variables
+      FAUNA_API_KEY: ${env:FAUNA_API_KEY, file(serverless.env.yml):${self:custom.stage}.environment.FAUNA_API_KEY}
+    events:
+      - httpApi:
+          method: POST
+          path: /fauna-bench
 
 # you can add CloudFormation resource templates here
 resources:
